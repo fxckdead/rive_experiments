@@ -1,6 +1,5 @@
 {
-  "dependencies": [
-    "fmt",
-    "sdl3"
-  ]
+	"name": "rive-tests",
+	"version-string": "0.1.0",
+	"dependencies": ["sdl3"]
 }

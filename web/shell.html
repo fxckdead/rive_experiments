@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Rive Tests - SDL3 + OpenGL</title>
+    <style>
+        html, body {
+            background: #232323;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #gameContainer {
+            background: transparent !important;
+            position: absolute;
+        }
+
+        #gameContainer canvas {
+            position: absolute;
+            display: block;
+        }
+
+        .ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            z-index: 1000;
+            font-size: 14px;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-bottom: 10px;
+        }
+
+        /* Hide UI in fullscreen */
+        body.fullscreen-mode .ui-overlay,
+        body.fullscreen-mode .controls {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-overlay">
+        <div class="status" id="status">Initializing...</div>
+        <div>SDL3 + OpenGL + WebAssembly</div>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="fullscreen-btn" onclick="toggleFullscreen()">Fullscreen</button>
+        <button id="pause-btn" onclick="togglePause()" disabled>Pause</button>
+    </div>
+
+    <script>
+        var Module = {
+            canvas: document.querySelector("#canvas"),
+            print: function(text) {
+                console.log('[WASM]', text);
+            },
+            printErr: function(text) {
+                console.error('[WASM]', text);
+            },
+            onRuntimeInitialized: function() {
+                document.getElementById('status').textContent = 'Ready';
+                document.getElementById('pause-btn').disabled = false;
+            },
+            onAbort: function(what) {
+                document.getElementById('status').textContent = 'Failed: ' + what;
+            }
+        };
+
+        var scaleToFit = true;
+        var isFullscreen = false;
+
+        function onResize() {
+            var container = document.getElementById('gameContainer');
+            var canvas = document.getElementById('canvas');
+            var w, h;
+
+            if (scaleToFit) {
+                w = window.innerWidth;
+                h = window.innerHeight;
+
+                var aspectRatio = 480 / 640; // height / width
+
+                if (w * aspectRatio > window.innerHeight) {
+                    w = Math.min(w, Math.ceil(h / aspectRatio));
+                }
+                h = Math.floor(w * aspectRatio);
+            } else {
+                w = 640;
+                h = 480;
+            }
+
+            container.style.width = canvas.style.width = w + "px";
+            container.style.height = canvas.style.height = h + "px";
+            container.style.top = Math.floor((window.innerHeight - h) / 2) + "px";
+            container.style.left = Math.floor((window.innerWidth - w) / 2) + "px";
+        }
+
+        function toggleFullscreen() {
+            if (isFullscreen) {
+                exitFullscreen();
+            } else {
+                enterFullscreen();
+            }
+        }
+
+        function enterFullscreen() {
+            var element = document.documentElement;
+            
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            }
+            
+            // Apply fullscreen mode regardless of API success
+            document.body.classList.add('fullscreen-mode');
+            isFullscreen = true;
+            scaleToFit = true;
+            onResize();
+            updateFullscreenButton();
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+            
+            document.body.classList.remove('fullscreen-mode');
+            isFullscreen = false;
+            scaleToFit = true; // Keep scaling for responsive design
+            onResize();
+            updateFullscreenButton();
+        }
+
+        function updateFullscreenButton() {
+            var btn = document.getElementById('fullscreen-btn');
+            btn.textContent = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
+        }
+
+        function togglePause() {
+            try {
+                if (typeof Module !== 'undefined' && Module._toggle_pause) {
+                    Module._toggle_pause();
+                    
+                    var isPaused = Module._get_pause_state ? Module._get_pause_state() : 0;
+                    var btn = document.getElementById('pause-btn');
+                    btn.textContent = isPaused ? 'Resume' : 'Pause';
+                }
+            } catch (error) {
+                console.error('Error toggling pause:', error);
+            }
+        }
+
+        // Handle fullscreen change events
+        function handleFullscreenChange() {
+            var browserFullscreen = !!(document.fullscreenElement || 
+                                      document.webkitFullscreenElement || 
+                                      document.mozFullScreenElement || 
+                                      document.msFullscreenElement);
+            
+            if (!browserFullscreen && isFullscreen) {
+                // User pressed ESC or exited fullscreen via browser
+                exitFullscreen();
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'f' || event.key === 'F') {
+                event.preventDefault();
+                toggleFullscreen();
+            }
+        });
+
+        // Event listeners
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        window.addEventListener('resize', onResize);
+        document.addEventListener('DOMContentLoaded', onResize);
+
+        // Initialize
+        onResize();
+    </script>
+
+    {{{ SCRIPT }}}
+</body>
+</html> 
