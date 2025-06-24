@@ -1,0 +1,57 @@
+# CMake build folders
+/build/
+/build-debug/
+/build-release/
+/out/
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+CTestTestfile.cmake
+install_manifest.txt
+
+# Preset-specific
+/build/*
+
+# Ninja build
+.ninja_deps
+.ninja_log
+rules.ninja
+build.ninja
+
+# Mac specific
+.DS_Store
+
+# Windows specific
+*.exe
+*.pdb
+*.ilk
+*.vcxproj*
+*.sln
+*.user
+*.opensdf
+*.sdf
+
+# Linux specific
+*.out
+
+# Logs and misc
+*.log
+*.obj
+*.o
+*.a
+*.so
+*.dll
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+
+# Shell scripts (optional if you want to avoid permission issues)
+scripts/*.sh
+
+# vcpkg installed packages (if not globally installed)
+vcpkg_installed/
