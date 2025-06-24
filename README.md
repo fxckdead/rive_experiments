@@ -44,8 +44,8 @@ Make sure the following tools are installed:
 ## 📦 Clone the Project
 
 ```bash
-git clone https://github.com/your-username/rive_tests.git
-cd rive_tests
+git clone https://github.com/fxckdead/rive_experiments
+cd rive_experiments
 ```
 
 ---
