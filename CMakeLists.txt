@@ -14,7 +14,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 find_package(fmt CONFIG REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
 
 add_executable(rive_tests src/main.cpp) 
 
-target_link_libraries(rive_tests PRIVATE fmt::fmt)
+target_link_libraries(rive_tests PRIVATE fmt::fmt SDL3::SDL3)
