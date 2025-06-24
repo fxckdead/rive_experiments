@@ -50,8 +50,5 @@ build.ninja
 .idea/
 *.swp
 
-# Shell scripts (optional if you want to avoid permission issues)
-scripts/*.sh
-
 # vcpkg installed packages (if not globally installed)
 vcpkg_installed/
