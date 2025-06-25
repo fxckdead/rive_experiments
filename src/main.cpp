@@ -5,6 +5,9 @@
 #include <SDL3/SDL_main.h>
 #include <cmath>
 
+#include <rive/artboard.hpp>
+#include <rive/math/vec2d.hpp>
+
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = nullptr;
 static SDL_GLContext glContext = nullptr;
@@ -14,6 +17,10 @@ static bool isPaused = false;
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
+    (void)appstate;  // Suppress unused parameter warning
+    (void)argc;      // Suppress unused parameter warning
+    (void)argv;      // Suppress unused parameter warning
+    
     SDL_SetAppMetadata("SDL3 OpenGL Example", "1.0", "cl.staytrue.rive");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -58,6 +65,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
+    (void)appstate;  // Suppress unused parameter warning
+    
     if (event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
     }
@@ -67,6 +76,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
+    (void)appstate;  // Suppress unused parameter warning
+    
     if (!isPaused) {
         const double now = ((double)SDL_GetTicks()) / 1000.0;  /* convert from milliseconds to seconds. */
         /* choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
@@ -85,6 +96,9 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
+    (void)appstate;  // Suppress unused parameter warning
+    (void)result;    // Suppress unused parameter warning
+    
     if (glContext) {
         SDL_GL_DestroyContext(glContext);
         glContext = nullptr;
