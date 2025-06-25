@@ -5,6 +5,9 @@
 #include <SDL3/SDL_main.h>
 #include <cmath>
 
+#include <rive/artboard.hpp>
+#include <rive/math/vec2d.hpp>
+
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = nullptr;
 static SDL_GLContext glContext = nullptr;
