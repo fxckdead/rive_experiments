@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Set toolchain before project() if using vcpkg
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND NOT EMSCRIPTEN)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
 endif()
 
@@ -107,10 +107,10 @@ if(PLATFORM_WEB)
         SUFFIX ".html"
         OUTPUT_NAME "index"
     )
-    target_compile_options(rive_tests PRIVATE
+    target_compile_options(rive_tests PRIVATE 
         "SHELL:-s USE_SDL=3"
     )
-    target_link_options(rive_tests PRIVATE
+    target_link_options(rive_tests PRIVATE 
         "SHELL:-s USE_SDL=3"
         "SHELL:-s USE_WEBGL2=1"
         "SHELL:-s FULL_ES3=1"
