@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Set toolchain before project() if using vcpkg
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND NOT EMSCRIPTEN)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
 endif()
 
@@ -55,7 +55,6 @@ add_library(glad STATIC
 if(PLATFORM_DESKTOP)
     find_package(OpenGL REQUIRED)
     set(GL_LIBS OpenGL::GL)
-    target_compile_definitions(glad PUBLIC GLAD_GL)
 elseif(PLATFORM_MOBILE OR PLATFORM_WEB)
     # Mobile and Web use OpenGL ES
     set(GL_LIBS "")  # GLES is handled by platform
@@ -82,11 +81,10 @@ if(PLATFORM_WEB)
         SUFFIX ".html"
         OUTPUT_NAME "index"
     )
-    target_compile_options(rive_tests PRIVATE
+    target_compile_options(rive_tests PRIVATE 
         "SHELL:-s USE_SDL=3"
-        "SHELL:-s USE_WEBGL2=1"
     )
-    target_link_options(rive_tests PRIVATE
+    target_link_options(rive_tests PRIVATE 
         "SHELL:-s USE_SDL=3"
         "SHELL:-s USE_WEBGL2=1"
         "SHELL:-s FULL_ES3=1"
@@ -94,7 +92,7 @@ if(PLATFORM_WEB)
         "SHELL:-s ALLOW_MEMORY_GROWTH=1"
         "SHELL:-s EXPORTED_FUNCTIONS=['_main']"
         "SHELL:-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
-        "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html"
+        "SHELL:--shell-file=${CMAKE_SOURCE_DIR}/web/shell.html"
     )
 elseif(PLATFORM_MOBILE)
     if(IOS)
