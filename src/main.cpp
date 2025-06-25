@@ -1,17 +1,13 @@
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <cmath>
 
-#include <rive/artboard.hpp>
-#include <rive/math/vec2d.hpp>
-
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = nullptr;
 static SDL_GLContext glContext = nullptr;
-static GladGLContext gladContext = {};
 static bool isPaused = false;
 
 /* This function runs once at startup. */
@@ -40,25 +36,25 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
         return SDL_APP_FAILURE;
     }
 
-    // Initialize GLAD with the context
+    // Initialize GLAD with the loader function
 #if defined(__ANDROID__) || defined(__IPHONEOS__) || defined(__EMSCRIPTEN__)
-    // Use OpenGL ES on mobile platforms and WebAssembly
-    if (!gladLoadGLES2Context(&gladContext, (GLADloadfunc)SDL_GL_GetProcAddress)) {
-        SDL_Log("Failed to initialize GLAD (OpenGL ES)");
+    // Use OpenGL ES on mobile platforms and WebAssembly - for now use desktop GL
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+        SDL_Log("Failed to initialize GLAD (OpenGL)");
         return SDL_APP_FAILURE;
     }
 #else
     // Use desktop OpenGL on other platforms  
-    if (!gladLoadGLContext(&gladContext, (GLADloadfunc)SDL_GL_GetProcAddress)) {
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
         SDL_Log("Failed to initialize GLAD (OpenGL)");
         return SDL_APP_FAILURE;
     }
 #endif
 
-    SDL_Log("OpenGL Version: %s", gladContext.GetString(GL_VERSION));
-    SDL_Log("OpenGL Renderer: %s", gladContext.GetString(GL_RENDERER));
+    SDL_Log("OpenGL Version: %s", glGetString(GL_VERSION));
+    SDL_Log("OpenGL Renderer: %s", glGetString(GL_RENDERER));
     
-    gladContext.ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     return SDL_APP_CONTINUE;
 }
 
@@ -85,8 +81,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         const float green = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
         const float blue = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
 
-        gladContext.ClearColor(red, green, blue, 1.0f);
-        gladContext.Clear(GL_COLOR_BUFFER_BIT);
+        glClearColor(red, green, blue, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         SDL_GL_SwapWindow(window);
     }

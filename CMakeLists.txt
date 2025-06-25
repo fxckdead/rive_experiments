@@ -10,6 +10,10 @@ project(rive_tests C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Tell CMake where to find our custom FindTMXLITE.cmake module.
+# set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 # Enable folders in IDEs like Visual Studio
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -42,14 +46,17 @@ if(PLATFORM_WEB)
     # For Emscripten, we'll use the built-in SDL support
     # No need to find SDL3 package
 else()
-    # For other platforms, use vcpkg SDL3
+    # For other platforms, use vcpkg packages
     find_package(SDL3 CONFIG REQUIRED)
+    find_package(harfbuzz CONFIG REQUIRED)
+    find_package(PNG REQUIRED)
+    find_package(WebP CONFIG REQUIRED)
+    find_package(yoga CONFIG REQUIRED)
+    find_package(SheenBidi REQUIRED)
+    find_package(glad CONFIG REQUIRED)
 endif()
 
-# Add glad manually (since it's not installed via vcpkg)
-add_library(glad STATIC
-    third_party/glad/src/gl.c
-)
+find_package(RIVE REQUIRED)
 
 # Platform-specific OpenGL setup
 if(PLATFORM_DESKTOP)
@@ -58,18 +65,6 @@ if(PLATFORM_DESKTOP)
 elseif(PLATFORM_MOBILE OR PLATFORM_WEB)
     # Mobile and Web use OpenGL ES
     set(GL_LIBS "")  # GLES is handled by platform
-    target_compile_definitions(glad PUBLIC GLAD_GLES2)
-    
-    if(PLATFORM_WEB)
-        # Emscripten-specific settings
-        target_compile_definitions(glad PUBLIC GLAD_GLES2_IMPLEMENTATION)
-    endif()
-endif()
-
-# Add EGL source only for platforms that need it
-if(PLATFORM_MOBILE)
-    target_sources(glad PRIVATE third_party/glad/src/egl.c)
-    target_compile_definitions(glad PUBLIC GLAD_EGL)
 endif()
 
 add_executable(rive_tests src/main.cpp)
@@ -105,10 +100,6 @@ elseif(PLATFORM_MOBILE)
     endif()
 endif()
 
-# Include directories
-target_include_directories(glad PUBLIC third_party/glad/include)
-set_target_properties(glad PROPERTIES LINKER_LANGUAGE C)
-
 # Platform-specific preprocessor definitions
 if(PLATFORM_WEB)
     target_compile_definitions(rive_tests PRIVATE PLATFORM_WEB)
@@ -128,14 +119,25 @@ if(PLATFORM_WEB)
     # For Emscripten, SDL is handled via link options
     target_link_libraries(rive_tests
         PRIVATE
-            glad
+            RIVE::rive
+            RIVE::renderer
+            RIVE::decoders
+            SheenBidi::SheenBidi
     )
 else()
     target_link_libraries(rive_tests
         PRIVATE
             SDL3::SDL3
             ${GL_LIBS}
-            glad
+            glad::glad
+            harfbuzz::harfbuzz
+            PNG::PNG
+            WebP::webp
+            yoga::yogacore
+            RIVE::rive
+            RIVE::renderer
+            RIVE::decoders
+            SheenBidi::SheenBidi
     )
 endif()
 

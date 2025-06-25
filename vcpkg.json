@@ -1,5 +1,22 @@
 {
 	"name": "rive-tests",
 	"version-string": "0.1.0",
-	"dependencies": ["sdl3"]
+	"dependencies": [
+		"sdl3",
+		{
+			"name": "harfbuzz",
+			"features": ["coretext"]
+		},
+		"libpng",
+		"libwebp",
+		"yoga",
+		"libjpeg-turbo",
+		"glad"
+	],
+	"overrides": [
+		{
+			"name": "yoga",
+			"version": "2.0.1"
+		}
+	]
 }
