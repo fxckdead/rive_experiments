@@ -35,8 +35,7 @@ echo "Configuring project for WebAssembly..."
 emcmake cmake -B "${BUILD_DIR}" -S . \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DEMSCRIPTEN=ON \
-    -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
-    -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
 
 # Build
 echo "Building project..."
