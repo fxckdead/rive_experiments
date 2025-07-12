@@ -67,7 +67,30 @@ elseif(PLATFORM_MOBILE OR PLATFORM_WEB)
     set(GL_LIBS "")  # GLES is handled by platform
 endif()
 
-add_executable(rive_tests src/main.cpp)
+# Graphics backend source files
+set(GRAPHICS_BACKEND_SOURCES
+    src/graphics_backend.hpp
+    src/opengl_backend.cpp
+    src/opengl_backend.hpp
+)
+
+# Add Metal backend on Apple platforms
+if(APPLE)
+    list(APPEND GRAPHICS_BACKEND_SOURCES
+        src/graphics_backend.mm
+        src/metal_backend.mm
+        src/metal_backend.hpp
+    )
+else()
+    list(APPEND GRAPHICS_BACKEND_SOURCES
+        src/graphics_backend.cpp
+    )
+endif()
+
+add_executable(rive_tests
+    src/main.cpp
+    ${GRAPHICS_BACKEND_SOURCES}
+)
 
 # Platform-specific executable properties
 if(PLATFORM_WEB)
@@ -76,10 +99,10 @@ if(PLATFORM_WEB)
         SUFFIX ".html"
         OUTPUT_NAME "index"
     )
-    target_compile_options(rive_tests PRIVATE 
+    target_compile_options(rive_tests PRIVATE
         "SHELL:-s USE_SDL=3"
     )
-    target_link_options(rive_tests PRIVATE 
+    target_link_options(rive_tests PRIVATE
         "SHELL:-s USE_SDL=3"
         "SHELL:-s USE_WEBGL2=1"
         "SHELL:-s FULL_ES3=1"
@@ -133,11 +156,24 @@ else()
             harfbuzz::harfbuzz
             PNG::PNG
             WebP::webp
+            WebP::webpdemux
+            WebP::libwebpmux
+            WebP::webpdecoder
             yoga::yogacore
             RIVE::rive
             RIVE::renderer
             RIVE::decoders
             SheenBidi::SheenBidi
+    )
+endif()
+
+# Apple-specific frameworks for Metal support
+if(APPLE)
+    target_link_libraries(rive_tests
+        PRIVATE
+            "-framework Metal"
+            "-framework QuartzCore"
+            "-framework Cocoa"
     )
 endif()
 
