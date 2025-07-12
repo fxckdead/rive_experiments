@@ -5,13 +5,19 @@
 		"sdl3",
 		{
 			"name": "harfbuzz",
-			"features": ["coretext"]
+			"default-features": false,
+			"features": [
+				{
+					"name": "coretext",
+					"platform": "osx"
+				},
+				"freetype"
+			]
 		},
 		"libpng",
 		"libwebp",
 		"yoga",
-		"libjpeg-turbo",
-		"glad"
+		"libjpeg-turbo"
 	],
 	"overrides": [
 		{

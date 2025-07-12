@@ -187,6 +187,11 @@ rive::gpu::RenderContext* MetalBackend::getRenderContext()
     return renderContext.get();
 }
 
+rive::gpu::RenderTarget* MetalBackend::getRenderTarget()
+{
+    return renderTarget.get();
+}
+
 void* MetalBackend::getNativeHandle()
 {
     // For Metal, return the current drawable (the render target)
@@ -195,14 +200,12 @@ void* MetalBackend::getNativeHandle()
 
 bool MetalBackend::setupMetalLayer()
 {
-    // Debug: Check if window pointer is valid
     if (!window)
     {
         SDL_Log("MetalBackend::setupMetalLayer - window pointer is NULL");
         return false;
     }
 
-    // Debug: Get window properties
     SDL_PropertiesID windowProps = SDL_GetWindowProperties(window);
     if (!windowProps)
     {
@@ -224,8 +227,6 @@ bool MetalBackend::setupMetalLayer()
         SDL_Log("Failed to get Cocoa window from SDL3 properties");
         SDL_Log("Window properties available:");
 
-        // Debug: Try to enumerate available properties (this might not work in all SDL3 versions)
-        // Let's try some common properties to see what's available
         void* cocoaWindow = SDL_GetPointerProperty(windowProps, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
         SDL_Log("  - SDL_PROP_WINDOW_COCOA_WINDOW_POINTER: %p", cocoaWindow);
 

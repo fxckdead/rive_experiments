@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Set toolchain before project() if using vcpkg
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND NOT EMSCRIPTEN)
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
 endif()
 
@@ -44,7 +44,12 @@ endif()
 # Dependencies
 if(PLATFORM_WEB)
     # For Emscripten, we'll use the built-in SDL support
-    # No need to find SDL3 package
+    # But we still need other packages for Rive decoders
+    find_package(harfbuzz CONFIG REQUIRED)
+    find_package(PNG REQUIRED)
+    find_package(WebP CONFIG REQUIRED)
+    find_package(yoga CONFIG REQUIRED)
+    find_package(SheenBidi REQUIRED)
 else()
     # For other platforms, use vcpkg packages
     find_package(SDL3 CONFIG REQUIRED)
@@ -53,7 +58,7 @@ else()
     find_package(WebP CONFIG REQUIRED)
     find_package(yoga CONFIG REQUIRED)
     find_package(SheenBidi REQUIRED)
-    find_package(glad CONFIG REQUIRED)
+    find_package(GLAD REQUIRED)
 endif()
 
 find_package(RIVE REQUIRED)
@@ -92,6 +97,9 @@ add_executable(rive_tests
     ${GRAPHICS_BACKEND_SOURCES}
 )
 
+# Add Rive include directories to the main target
+target_include_directories(rive_tests PRIVATE ${RIVE_INCLUDE_DIRS})
+
 # Platform-specific executable properties
 if(PLATFORM_WEB)
     # Emscripten-specific settings
@@ -111,6 +119,7 @@ if(PLATFORM_WEB)
         "SHELL:-s EXPORTED_FUNCTIONS=['_main']"
         "SHELL:-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
         "SHELL:--shell-file=${CMAKE_SOURCE_DIR}/web/shell.html"
+        "SHELL:--preload-file=${CMAKE_SOURCE_DIR}/assets@/assets"
     )
 elseif(PLATFORM_MOBILE)
     if(IOS)
@@ -140,19 +149,27 @@ endif()
 # Link libraries
 if(PLATFORM_WEB)
     # For Emscripten, SDL is handled via link options
+    # But we need image libraries for Rive decoders
     target_link_libraries(rive_tests
         PRIVATE
             RIVE::rive
             RIVE::renderer
             RIVE::decoders
             SheenBidi::SheenBidi
+            harfbuzz::harfbuzz
+            PNG::PNG
+            WebP::webp
+            WebP::webpdemux
+            WebP::libwebpmux
+            WebP::webpdecoder
+            yoga::yogacore
     )
 else()
     target_link_libraries(rive_tests
         PRIVATE
             SDL3::SDL3
             ${GL_LIBS}
-            glad::glad
+            GLAD::GLAD
             harfbuzz::harfbuzz
             PNG::PNG
             WebP::webp
