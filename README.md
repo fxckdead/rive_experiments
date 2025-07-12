@@ -1,15 +1,28 @@
-# Rive Tests - Cross-Platform SDL3 + OpenGL Project
+# Rive Tests - Cross-Platform SDL3 + Multi-Backend Project
 
-A cross-platform C++ project using SDL3, OpenGL, and vcpkg for dependency management. Supports desktop (Windows, Linux, macOS) and WebAssembly platforms.
+A cross-platform C++ project using SDL3 with multiple graphics backends (OpenGL and Metal) for rendering Rive animations. Supports desktop (Windows, Linux, macOS) and WebAssembly platforms.
 
 ## Features
 
 - 🖥️ **Cross-Platform**: Windows, Linux, macOS, WebAssembly
 - 🎮 **SDL3**: Modern callback-based API
-- 🎨 **OpenGL/OpenGL ES**: Hardware-accelerated rendering
+- 🎨 **Multiple Graphics Backends**:
+  - **OpenGL/OpenGL ES**: Hardware-accelerated rendering (all platforms)
+  - **Metal**: Native Apple graphics API (macOS only)
+  - **Automatic Backend Detection**: Chooses best backend for your platform
 - 📦 **vcpkg**: Dependency management
 - 🔧 **CMake**: Build system
 - 🌐 **GLAD**: OpenGL function loading (MX mode for multi-context support)
+- 🎬 **Rive Animation**: Vector animation rendering with full Rive runtime support
+
+## Graphics Backend Support
+
+| Platform    | OpenGL  | Metal | Default |
+|-------------|---------|-------|---------|
+| macOS       | ❌      | ✅     | Metal   |
+| Linux       | ✅      | ❌     | OpenGL  |
+| Windows     | ✅      | ❌     | OpenGL  |
+| WebAssembly | ✅      | ❌     | OpenGL  |
 
 ## Prerequisites
 
@@ -27,6 +40,7 @@ A cross-platform C++ project using SDL3, OpenGL, and vcpkg for dependency manage
 #### macOS
 - **Xcode** or **Xcode Command Line Tools**
 - **Homebrew** (recommended for vcpkg installation)
+- **Metal**: Supported on macOS 10.11+ (automatically available)
 
 #### Linux
 - **GCC 9+** or **Clang 10+**
@@ -59,7 +73,7 @@ export VCPKG_ROOT=/path/to/vcpkg
 
 ### 2. Install GLAD
 
-This project uses a custom GLAD installation in `third_party/glad/`. 
+This project uses a custom GLAD installation in `third_party/glad/`.
 Generate your GLAD files at https://glad.dav1d.de/ with:
 - Language: C/C++
 - Specification: OpenGL
@@ -79,8 +93,12 @@ Generate your GLAD files at https://glad.dav1d.de/ with:
 # Build
 ./scripts/build.sh
 
-# Run
+# Run with auto-detected backend
 ./scripts/run.sh
+
+# Run with specific backend
+./scripts/run.sh --backend opengl
+./scripts/run.sh --backend metal  # macOS only
 ```
 
 #### Windows
@@ -88,93 +106,147 @@ Generate your GLAD files at https://glad.dav1d.de/ with:
 scripts\build_windows.bat Debug
 ```
 
-#### Cross-Platform Build
+#### macOS
 ```bash
-# Linux/macOS
-./scripts/build.sh Debug
-./scripts/build.sh Release
+./scripts/build.sh
+# Uses Metal by default, or specify backend:
+./scripts/run.sh --backend metal
+./scripts/run.sh --backend opengl
+```
+
+#### Linux
+```bash
+./scripts/build.sh
+# Uses OpenGL (Metal not available on Linux)
+./scripts/run.sh --backend opengl
 ```
 
 ### WebAssembly
 
-First, install and activate Emscripten:
+**Requirements:**
+- Emscripten SDK properly installed and activated
+- `VCPKG_ROOT` environment variable set
+
 ```bash
-# Install emsdk
-git clone https://github.com/emscripten-core/emsdk.git
-cd emsdk
-./emsdk install latest
-./emsdk activate latest
-source ./emsdk_env.sh
+# Activate emsdk first
+source /path/to/emsdk/emsdk_env.sh
+
+# Configure and build
+emcmake cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+
+# Serve
+python3 -m http.server -d build
 ```
 
-Build for WebAssembly:
-```bash
-# Build for web (Debug by default)
-./scripts/build_web.sh
+## Runtime Backend Selection
 
-# Or specify build type
-./scripts/build_web.sh Release
+The application automatically detects the best graphics backend for your platform:
+
+### Automatic Selection
+- **macOS**: Metal (preferred for performance)
+- **Linux**: OpenGL
+- **Windows**: OpenGL
+- **WebAssembly**: OpenGL ES/WebGL
+
+### Manual Selection
+You can force a specific backend using command line arguments:
+
+```bash
+# Force OpenGL (available on all platforms)
+./build/Debug/rive_tests --backend opengl
+
+# Force Metal (macOS only)
+./build/Debug/rive_tests --backend metal
 ```
 
-The build script will:
-- Validate that `VCPKG_ROOT` environment variable is set
-- Download and compile SDL3 for WebAssembly (first build may take longer)
-- Use a custom HTML shell template (`web/shell.html`) for better presentation
-- Generate the following files in `build/web_debug/` or `build/web_release/`:
-  - `index.html` - Main HTML file with custom styling and controls
-  - `index.js` - JavaScript runtime
-  - `index.wasm` - WebAssembly binary
-
-**Serve locally:**
-```bash
-cd build/web_debug
-python3 -m http.server 8080
-```
-
-Then open your browser to: **http://localhost:8080**
-
-**Note:** WebAssembly applications require being served from a web server (not opened directly as a file) due to browser security restrictions.
+### Controls
+- **Space**: Pause/Resume animation
+- **Window Resize**: Automatic scaling and centering
 
 ## Project Structure
 
 ```
-rive_tests/
 ├── src/
-│   └── main.cpp              # Main application code
-├── scripts/
-│   ├── configure.sh          # Configure build (Unix)
-│   ├── build.sh              # Build script (Unix)
-│   ├── build_web.sh          # WebAssembly build script
-│   ├── build_windows.bat     # Windows build script
-│   ├── clean.sh              # Clean builds (Unix)
-│   └── run.sh                # Run executable (Unix)
-├── web/
-│   └── shell.html            # Custom HTML shell for WebAssembly
+│   ├── main.cpp                 # Main application with multi-backend support
+│   ├── graphics_backend.hpp     # Graphics backend interface
+│   ├── graphics_backend.cpp     # Backend factory and detection
+│   ├── opengl_backend.hpp       # OpenGL backend implementation
+│   ├── opengl_backend.cpp       # OpenGL backend implementation
+│   ├── metal_backend.hpp        # Metal backend implementation (macOS)
+│   └── metal_backend.mm         # Metal backend implementation (macOS)
+├── assets/
+│   └── rive_files/
+│       └── alien.riv            # Rive animation file
 ├── third_party/
-│   └── glad/                 # GLAD OpenGL loader
-│       ├── include/
-│       └── src/
-├── CMakeLists.txt            # Cross-platform CMake configuration
-├── vcpkg.json               # Dependencies manifest
-└── README.md                # This file
+│   ├── glad/                    # OpenGL function loader
+│   ├── rive/                    # Rive animation runtime
+│   ├── rive_renderer/           # Rive rendering engine (OpenGL/Metal)
+│   └── rive_decoders/           # Rive image/media decoders
+├── scripts/
+│   ├── configure.sh             # CMake configuration
+│   ├── build.sh                 # Build script with backend info
+│   ├── run.sh                   # Run script with backend selection
+│   └── clean.sh                 # Clean build artifacts
+├── cmake/
+│   └── FindRIVE.cmake          # Custom CMake module with Metal support
+├── build/                       # Build output directory
+├── web/
+│   └── shell.html              # WebAssembly shell template
+├── CMakeLists.txt              # Cross-platform CMake configuration
+├── vcpkg.json                  # Dependencies manifest
+└── README.md                   # This file
 ```
 
 ## Platform Detection
 
 The CMake configuration automatically detects the target platform and configures accordingly:
 
-- **Desktop** (`PLATFORM_DESKTOP`): Uses OpenGL with `gladLoadGLContext`
-- **Mobile** (`PLATFORM_MOBILE`): Uses OpenGL ES with `gladLoadGLES2Context`  
+- **Desktop** (`PLATFORM_DESKTOP`): Uses OpenGL or Metal
+- **Mobile** (`PLATFORM_MOBILE`): Uses OpenGL ES
 - **Web** (`PLATFORM_WEB`): Uses WebGL with `gladLoadGLES2Context`
 
 ## Dependencies
 
 Managed by vcpkg:
 - **SDL3**: Window management and input
-- **fmt**: String formatting
+- **glad**: OpenGL function loading
+- **harfbuzz**: Text shaping
+- **libpng**: PNG image support
+- **libwebp**: WebP image support
+- **yoga**: Layout engine
+- **SheenBidi**: Bidirectional text support
 
 Manually managed:
-- **GLAD**: OpenGL function loading (in `third_party/`)
+- **Rive Runtime**: Vector animation engine
+- **Rive Renderer**: Multi-backend rendering (OpenGL/Metal)
+- **Rive Decoders**: Image and media decoding
+
+## Graphics Backend Architecture
+
+The project uses a clean abstraction layer for graphics backends:
+
+### Backend Interface
+```cpp
+class GraphicsBackendInterface {
+    virtual bool initialize(void* window, int width, int height) = 0;
+    virtual std::unique_ptr<rive::Renderer> createRenderer() = 0;
+    // ... other methods
+};
+```
+
+### Supported Backends
+- **OpenGLBackend**: Cross-platform OpenGL 3.3+ support
+- **MetalBackend**: Native Metal support for macOS (10.11+)
+
+### Backend Selection
+```cpp
+// Automatic detection
+GraphicsBackend backend = detectBestBackend();
+
+// Manual selection
+auto backend = createGraphicsBackend(GraphicsBackend::Metal);
+```
 
 ## Development
 
@@ -185,7 +257,7 @@ Manually managed:
 {
   "dependencies": [
     "sdl3",
-    "fmt",
+    "glad",
     "your-new-package"
   ]
 }
@@ -210,26 +282,65 @@ Use the provided preprocessor definitions:
 #endif
 ```
 
+### Graphics Backend Development
+
+To add a new graphics backend:
+
+1. Create `new_backend.hpp` and `new_backend.cpp`
+2. Implement `GraphicsBackendInterface`
+3. Add to `createGraphicsBackend()` factory
+4. Update CMake configuration
+5. Update platform detection in `detectBestBackend()`
+
+## Performance Notes
+
+### Metal vs OpenGL on macOS
+- **Metal**: Generally provides better performance and lower CPU overhead
+- **OpenGL**: More compatible, easier to debug
+- **Recommendation**: Use Metal for production, OpenGL for development/debugging
+
+### Backend-Specific Optimizations
+- **Metal**: Leverages Apple's optimized graphics pipeline
+- **OpenGL**: Cross-platform compatibility with good performance
+
 ## Troubleshooting
 
-### vcpkg Issues
-- Ensure `VCPKG_ROOT` environment variable is set
-- Try cleaning vcpkg cache: `vcpkg remove --outdated`
+### General Issues
+- **vcpkg Issues**: Ensure `VCPKG_ROOT` environment variable is set
+- **Build Issues**: Clean build directory with `./scripts/clean.sh`
+- **Backend Selection**: Check console output for backend detection messages
 
-### Build Issues
-- Clean build directory: `./scripts/clean.sh`
-- Reconfigure: `./scripts/configure.sh`
+### Metal-Specific Issues (macOS)
+- **Metal Not Available**: Ensure macOS 10.11+ and compatible graphics hardware
+- **ARC Issues**: Metal backend uses Automatic Reference Counting (enabled automatically)
+- **Framework Issues**: Ensure Metal and QuartzCore frameworks are linked
+
+### OpenGL-Specific Issues
+- **GLAD Loading**: Verify OpenGL context creation before GLAD initialization
+- **Version Issues**: Ensure graphics drivers support OpenGL 3.3+
+- **Context Issues**: Check OpenGL context creation on window resize
 
 ### WebAssembly Issues
-- **`VCPKG_ROOT` must be set**: The build script requires this environment variable
-- First build may be slow as Emscripten downloads and compiles SDL3
-- Ensure Emscripten SDK is properly installed and activated
-- WebAssembly files must be served via HTTP server, not opened directly
-
-### OpenGL Issues
-- Verify GLAD generation includes correct OpenGL version
-- Check platform-specific OpenGL context creation
+- **Build Requirements**: Ensure Emscripten SDK is activated before building
+- **Serving**: WebAssembly files must be served via HTTP server
+- **Performance**: WebGL performance varies by browser and hardware
 
 ## License
 
-This project is public domain. Feel free to use it for any purpose!
+MIT License - See LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new graphics backends
+4. Ensure cross-platform compatibility
+5. Submit a pull request
+
+## Acknowledgments
+
+- **Rive**: Vector animation runtime and rendering engine
+- **SDL3**: Cross-platform window management
+- **YUP Framework**: Graphics backend architecture inspiration
+- **vcpkg**: Dependency management
+- **GLAD**: OpenGL function loading

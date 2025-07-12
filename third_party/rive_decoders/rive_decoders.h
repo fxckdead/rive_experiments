@@ -44,11 +44,11 @@
 #pragma once
 
 #if YUP_MODULE_AVAILABLE_libpng
-#define RIVE_PNG 1
+#define RIVE_PNG 0
 #endif
 
 #if YUP_MODULE_AVAILABLE_libwebp
-#define RIVE_WEBP 1
+#define RIVE_WEBP 0
 #endif
 
 #include "include/rive/decoders/bitmap_decoder.hpp"

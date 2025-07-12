@@ -30,7 +30,7 @@ if(NOT RIVE_THIRDPARTY_DIR)
         "${CMAKE_SOURCE_DIR}/extern"
         "${CMAKE_SOURCE_DIR}/external"
     )
-    
+
     foreach(_path ${_rive_search_paths})
         if(EXISTS "${_path}/rive/rive.h")
             set(RIVE_THIRDPARTY_DIR "${_path}")
@@ -71,17 +71,17 @@ endif()
 
 # Function to collect source files (same as before)
 function(_rive_collect_sources base_path output_var)
-    file(GLOB_RECURSE all_sources 
+    file(GLOB_RECURSE all_sources
         "${base_path}/*.cpp"
         "${base_path}/*.c"
         "${base_path}/*.mm"
         "${base_path}/*.m"
     )
-    
+
     set(filtered_sources "")
     foreach(source ${all_sources})
         set(include_file TRUE)
-        
+
         # Platform-specific filtering
         if(NOT RIVE_PLATFORM_WINDOWS AND source MATCHES "_windows\\.(cpp|c|mm|m)$")
             set(include_file FALSE)
@@ -110,17 +110,12 @@ function(_rive_collect_sources base_path output_var)
         if(NOT RIVE_PLATFORM_WEB AND source MATCHES "_wasm\\.(cpp|c|mm|m)$")
             set(include_file FALSE)
         endif()
-        
-        # Skip test files
-        if(source MATCHES "/test/" OR source MATCHES "_test\\.(cpp|c|mm|m)$")
-            set(include_file FALSE)
-        endif()
-        
+
         if(include_file)
             list(APPEND filtered_sources ${source})
         endif()
     endforeach()
-    
+
     set(${output_var} ${filtered_sources} PARENT_SCOPE)
 endfunction()
 
@@ -129,24 +124,24 @@ if(NOT TARGET RIVE::rive)
     # Core Rive Library
     set(rive_dir "${RIVE_THIRDPARTY_DIR}/rive")
     _rive_collect_sources("${rive_dir}/source" rive_sources)
-    
+
     add_library(RIVE_rive STATIC ${rive_sources})
     add_library(RIVE::rive ALIAS RIVE_rive)
-    
+
     target_compile_features(RIVE_rive PUBLIC cxx_std_17)
-    
+
     target_include_directories(RIVE_rive PUBLIC
         "${rive_dir}/include"
         "${rive_dir}"
     )
-    
+
     target_compile_definitions(RIVE_rive PUBLIC
         WITH_RIVE_TEXT=1
         WITH_RIVE_YOGA=1
         WITH_RIVE_LAYOUT=1
         _RIVE_INTERNAL_=1
     )
-    
+
     # Platform-specific settings
     if(RIVE_PLATFORM_APPLE)
         target_link_libraries(RIVE_rive PUBLIC "-framework CoreText")
@@ -156,11 +151,11 @@ if(NOT TARGET RIVE::rive)
             )
         endif()
     endif()
-    
+
     # Dependencies
     find_package(harfbuzz CONFIG REQUIRED)
     target_link_libraries(RIVE_rive PUBLIC harfbuzz::harfbuzz)
-    
+
     # SheenBidi - try to find it
     find_package(SheenBidi QUIET)
     if(SheenBidi_FOUND)
@@ -178,7 +173,7 @@ if(NOT TARGET RIVE::rive)
             endif()
         endif()
     endif()
-    
+
     # Yoga - try to find it with different target names
     find_package(yoga QUIET)
     if(yoga_FOUND)
@@ -199,15 +194,15 @@ if(NOT TARGET RIVE::decoders)
     # Rive Decoders
     set(rive_decoders_dir "${RIVE_THIRDPARTY_DIR}/rive_decoders")
     _rive_collect_sources("${rive_decoders_dir}/source" rive_decoders_sources)
-    
+
     add_library(RIVE_decoders STATIC ${rive_decoders_sources})
     add_library(RIVE::decoders ALIAS RIVE_decoders)
-    
+
     target_include_directories(RIVE_decoders PUBLIC
         "${rive_decoders_dir}/include"
         "${rive_decoders_dir}"
     )
-    
+
     # Add this section to handle libpng compatibility:
     # Create a compatibility header for libpng
     set(LIBPNG_COMPAT_DIR "${CMAKE_CURRENT_BINARY_DIR}/libpng_compat")
@@ -218,7 +213,7 @@ if(NOT TARGET RIVE::decoders)
     # Create a compatibility header for libwebp
     set(LIBWEBP_COMPAT_DIR "${CMAKE_CURRENT_BINARY_DIR}/libwebp_compat")
     file(MAKE_DIRECTORY "${LIBWEBP_COMPAT_DIR}/libwebp")
-    file(WRITE "${LIBWEBP_COMPAT_DIR}/libwebp/libwebp.h" 
+    file(WRITE "${LIBWEBP_COMPAT_DIR}/libwebp/libwebp.h"
 "#include <webp/decode.h>
 #include <webp/demux.h>
 #include <webp/encode.h>
@@ -230,21 +225,21 @@ if(NOT TARGET RIVE::decoders)
     target_compile_definitions(RIVE_decoders PUBLIC
         _RIVE_INTERNAL_=1
     )
-    
+
     # Optional image format support
     find_package(PNG QUIET)
     find_package(WebP QUIET)
-    
+
     if(PNG_FOUND)
         target_compile_definitions(RIVE_decoders PUBLIC RIVE_PNG=1)
         target_link_libraries(RIVE_decoders PUBLIC PNG::PNG)
     endif()
-    
+
     if(WebP_FOUND)
         target_compile_definitions(RIVE_decoders PUBLIC RIVE_WEBP=1)
         target_link_libraries(RIVE_decoders PUBLIC WebP::webp)
     endif()
-    
+
     # Platform-specific settings
     if(RIVE_PLATFORM_APPLE)
         target_link_libraries(RIVE_decoders PUBLIC "-framework ImageIO")
@@ -261,12 +256,12 @@ if(NOT TARGET RIVE::renderer)
     # Rive Renderer
     set(rive_renderer_dir "${RIVE_THIRDPARTY_DIR}/rive_renderer")
     _rive_collect_sources("${rive_renderer_dir}/source" rive_renderer_sources)
-    
+
     # Platform-specific filtering for renderer backends
     set(filtered_renderer_sources "")
     foreach(source ${rive_renderer_sources})
         set(include_source TRUE)
-        
+
         # Platform-specific backend filtering
         if(RIVE_PLATFORM_WINDOWS)
             # On Windows: exclude Metal, WebGPU (keep D3D, OpenGL, Vulkan)
@@ -275,7 +270,7 @@ if(NOT TARGET RIVE::renderer)
             endif()
         elseif(RIVE_PLATFORM_APPLE)
             # On Apple: exclude D3D, Vulkan, WebGPU (keep Metal, OpenGL)
-            if(source MATCHES "/d3d/" OR source MATCHES "/d3d11/" OR source MATCHES "/d3d12/" OR 
+            if(source MATCHES "/d3d/" OR source MATCHES "/d3d11/" OR source MATCHES "/d3d12/" OR
                source MATCHES "/vulkan/" OR source MATCHES "/webgpu/")
                 set(include_source FALSE)
             endif()
@@ -292,18 +287,18 @@ if(NOT TARGET RIVE::renderer)
                 set(include_source FALSE)
             endif()
         endif()
-        
+
         # Include if not excluded
         if(include_source)
             list(APPEND filtered_renderer_sources ${source})
         endif()
     endforeach()
-    
+
     add_library(RIVE_renderer STATIC ${filtered_renderer_sources})
     add_library(RIVE::renderer ALIAS RIVE_renderer)
-    
+
     target_compile_features(RIVE_renderer PUBLIC cxx_std_17)
-    
+
     target_include_directories(RIVE_renderer PUBLIC
         "${rive_renderer_dir}/include"
         "${rive_renderer_dir}/source"
@@ -315,7 +310,7 @@ if(NOT TARGET RIVE::renderer)
     if(RIVE_PLATFORM_DESKTOP)
         set(GLAD_COMPAT_DIR "${CMAKE_CURRENT_BINARY_DIR}/glad_compat")
         file(MAKE_DIRECTORY "${GLAD_COMPAT_DIR}")
-        file(WRITE "${GLAD_COMPAT_DIR}/glad_custom.h" 
+        file(WRITE "${GLAD_COMPAT_DIR}/glad_custom.h"
 "#pragma once
 #include <glad/glad.h>
 
@@ -454,7 +449,7 @@ extern int GLAD_GL_VERSION_MAJOR;
 #define GLAD_GL_version_major GLAD_GL_VERSION_MAJOR
 #endif
 
-#ifndef GLAD_GL_version_minor  
+#ifndef GLAD_GL_version_minor
 extern int GLAD_GL_VERSION_MINOR;
 #define GLAD_GL_version_minor GLAD_GL_VERSION_MINOR
 #endif
@@ -490,21 +485,34 @@ extern int GLAD_GL_VERSION_MINOR;
     else()
         message(WARNING "glad not found. Please install via vcpkg or ensure glad is available")
     endif()
-    
+
     target_compile_definitions(RIVE_renderer PUBLIC
         WITH_RIVE_TEXT=1
         RIVE_DECODERS=1
         YUP_RIVE_USE_OPENGL=1
         _RIVE_INTERNAL_=1
     )
-    
+
+    # Enable Metal support on Apple platforms
+    if(RIVE_PLATFORM_APPLE)
+        target_compile_definitions(RIVE_renderer PUBLIC YUP_RIVE_USE_METAL=1)
+        target_link_libraries(RIVE_renderer PUBLIC
+            "-framework Metal"
+            "-framework QuartzCore"
+        )
+        # Enable ARC for Metal files
+        set_target_properties(RIVE_renderer PROPERTIES
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+        )
+    endif()
+
     # Platform-specific OpenGL definitions
     if(RIVE_PLATFORM_DESKTOP)
         target_compile_definitions(RIVE_renderer PUBLIC RIVE_DESKTOP_GL=1)
     elseif(RIVE_PLATFORM_WEB)
         target_compile_definitions(RIVE_renderer PUBLIC RIVE_WEBGL=1)
     endif()
-    
+
     # Link dependencies
     target_link_libraries(RIVE_renderer PUBLIC
         RIVE::rive
@@ -513,7 +521,7 @@ extern int GLAD_GL_VERSION_MINOR;
 endif()
 
 # Set up the standard CMake variables
-set(RIVE_INCLUDE_DIRS 
+set(RIVE_INCLUDE_DIRS
     "${RIVE_THIRDPARTY_DIR}/rive/include"
     "${RIVE_THIRDPARTY_DIR}/rive_renderer/include"
     "${RIVE_THIRDPARTY_DIR}/rive_decoders/include"
@@ -535,4 +543,4 @@ if(RIVE_FOUND AND CMAKE_CURRENT_FUNCTION)
     set(RIVE_THIRDPARTY_DIR ${RIVE_THIRDPARTY_DIR} PARENT_SCOPE)
 endif()
 
-mark_as_advanced(RIVE_THIRDPARTY_DIR) 
+mark_as_advanced(RIVE_THIRDPARTY_DIR)
