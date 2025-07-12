@@ -24,17 +24,15 @@
 
   BEGIN_YUP_MODULE_DECLARATION
 
-    ID:                 rive_decoders
-    vendor:             rive
-    version:            1.0
-    name:               Rive Decoders.
-    description:        The Rive Decoders is a companion library for ratser image decoding.
-    website:            https://github.com/rive-app/rive-runtime
-    license:            MIT
+    ID:               glad
+    vendor:           glad
+    version:          1.0.0
+    name:             Vulkan/GL/GLES/EGL/GLX/WGL Loader-Generator
+    description:      Vulkan/GL/GLES/EGL/GLX/WGL Loader-Generator based on the official specifications for multiple languages..
+    website:          https://glad.dav1d.de/
+    license:          MIT
 
-    searchpaths:        include
-    appleFrameworks:    ImageIO
-    enableARC:          1
+    searchpaths:      include
 
   END_YUP_MODULE_DECLARATION
 
@@ -43,12 +41,6 @@
 
 #pragma once
 
-#if YUP_MODULE_AVAILABLE_libpng
-#define RIVE_PNG 0
-#endif
-
-#if YUP_MODULE_AVAILABLE_libwebp
-#define RIVE_WEBP 0
-#endif
-
-#include "include/rive/decoders/bitmap_decoder.hpp"
+#include "include/glad.h"
+#include "include/glad_custom.h"
+#include "include/khrplatform.h"
