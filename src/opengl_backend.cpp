@@ -48,7 +48,7 @@ bool OpenGLBackend::initialize(void* windowPtr, int width, int height)
 #ifdef PLATFORM_WEB
     SDL_Log("WebGL context created successfully");
 #else
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
+    if (!gladLoadCustomLoader((GLADloadproc)SDL_GL_GetProcAddress))
     {
         SDL_Log("Failed to initialize GLAD (OpenGL)");
         return false;
