@@ -14,7 +14,8 @@
 			"binaryDir": "${sourceDir}/build/debug",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug",
-				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+				"VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
 			}
 		},
 		{
@@ -25,21 +26,21 @@
 			"binaryDir": "${sourceDir}/build/release",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release",
-				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+				"VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
 			}
 		},
 		{
 			"name": "web-debug",
 			"displayName": "Web Debug Build",
 			"description": "Configure for WebAssembly Debug with Emscripten",
-			"generator": "Unix Makefiles",
+			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/web_debug",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug",
 				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
 				"VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
 				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
-				"CMAKE_CROSSCOMPILING_EMULATOR": "$env{EMSDK}/node/22.16.0_64bit/bin/node",
 				"EMSCRIPTEN": "ON"
 			},
 			"environment": {
@@ -50,14 +51,13 @@
 			"name": "web-release",
 			"displayName": "Web Release Build",
 			"description": "Configure for WebAssembly Release with Emscripten",
-			"generator": "Unix Makefiles",
+			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/web_release",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release",
 				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
 				"VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
 				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
-				"CMAKE_CROSSCOMPILING_EMULATOR": "$env{EMSDK}/node/22.16.0_64bit/bin/node",
 				"EMSCRIPTEN": "ON"
 			},
 			"environment": {
