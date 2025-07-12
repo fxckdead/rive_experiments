@@ -17,10 +17,18 @@ bool OpenGLBackend::initialize(void* windowPtr, int width, int height)
     m_windowWidth = width;
     m_windowHeight = height;
 
-    // Set OpenGL attributes
+    // Set OpenGL attributes (platform-specific)
+#ifdef PLATFORM_WEB
+    // WebGL 2.0 context (equivalent to OpenGL ES 3.0)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#else
+    // Desktop OpenGL 4.6 context
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -36,13 +44,9 @@ bool OpenGLBackend::initialize(void* windowPtr, int width, int height)
     // Enable VSync
     SDL_GL_SetSwapInterval(1);
 
-    // Initialize GLAD
-#if defined(__ANDROID__) || defined(__EMSCRIPTEN__)
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
-    {
-        SDL_Log("Failed to initialize GLAD (OpenGL)");
-        return false;
-    }
+    // Initialize OpenGL loader (platform-specific)
+#ifdef PLATFORM_WEB
+    SDL_Log("WebGL context created successfully");
 #else
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
     {
@@ -96,6 +100,11 @@ void OpenGLBackend::beginFrame()
 
 void OpenGLBackend::endFrame()
 {
+    // Flush GPU commands before swapping buffers
+    rive::gpu::RenderContext::FlushResources flushResources;
+    flushResources.renderTarget = getRenderTarget();
+    m_renderContext->flush(flushResources);
+    
     // Swap buffers
     SDL_GL_SwapWindow(m_window);
 }
@@ -108,6 +117,10 @@ void OpenGLBackend::resize(int width, int height)
     if (m_initialized)
     {
         glViewport(0, 0, width, height);
+        
+        // Recreate render target with new dimensions
+        m_renderTarget = std::make_unique<rive::gpu::FramebufferRenderTargetGL>(
+            width, height, 0, 1); // FBO 0, no MSAA
     }
 }
 
@@ -118,7 +131,6 @@ std::unique_ptr<rive::Renderer> OpenGLBackend::createRenderer()
 
 rive::Factory* OpenGLBackend::createFactory()
 {
-    // Return the render context as a Factory (it implements the Factory interface)
     return m_renderContext.get();
 }
 
@@ -127,11 +139,18 @@ rive::gpu::RenderContext* OpenGLBackend::getRenderContext()
     return m_renderContext.get();
 }
 
+rive::gpu::RenderTarget* OpenGLBackend::getRenderTarget()
+{
+    if (!m_renderTarget) {
+        m_renderTarget = std::make_unique<rive::gpu::FramebufferRenderTargetGL>(
+            m_windowWidth, m_windowHeight, 0, 1); // FBO 0, no MSAA
+    }
+    return m_renderTarget.get();
+}
+
 void* OpenGLBackend::getNativeHandle()
 {
-    // For OpenGL, we don't need a specific handle for rendering
-    // The render context manages the OpenGL state internally
     return nullptr;
 }
 
-#endif
+#endif // __APPLE__

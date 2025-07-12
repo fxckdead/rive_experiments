@@ -27,6 +27,7 @@ public:
     virtual std::unique_ptr<rive::Renderer> createRenderer() = 0;
     virtual rive::Factory* createFactory() = 0;
     virtual rive::gpu::RenderContext* getRenderContext() = 0;
+    virtual rive::gpu::RenderTarget* getRenderTarget() = 0;
     virtual void* getNativeHandle() = 0;
 
     virtual GraphicsBackend getBackendType() const = 0;

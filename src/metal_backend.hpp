@@ -23,6 +23,7 @@ public:
     std::unique_ptr<rive::Renderer> createRenderer() override;
     rive::Factory* createFactory() override;
     rive::gpu::RenderContext* getRenderContext() override;
+    rive::gpu::RenderTarget* getRenderTarget() override;
     void* getNativeHandle() override;
 
     GraphicsBackend getBackendType() const override { return GraphicsBackend::Metal; }

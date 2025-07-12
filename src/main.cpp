@@ -72,9 +72,15 @@ bool initializeRive() {
   }
 
   // Load the Rive file
+#ifdef PLATFORM_WEB
+  // For web builds, use the virtual filesystem path (mounted by --preload-file)
+  auto fileContents = loadFileContents("/assets/rive_files/alien.riv");
+#else
+  // For desktop builds, use relative path from executable
   auto fileContents = loadFileContents(
       std::filesystem::path(__FILE__).parent_path().parent_path() /
       "assets/rive_files/alien.riv");
+#endif
   if (fileContents.empty()) {
     SDL_Log("Failed to load Rive file");
     return false;
@@ -193,10 +199,13 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, int argc,
   SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER,
                         SDL_WINDOW_RESIZABLE);
 
-  // Enable Metal support if using Metal backend
+  // Enable backend-specific window properties
   if (selectedBackend == GraphicsBackend::Metal) {
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_METAL_BOOLEAN, true);
     SDL_Log("Creating window with Metal support enabled");
+  } else if (selectedBackend == GraphicsBackend::OpenGL) {
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN, true);
+    SDL_Log("Creating window with OpenGL support enabled");
   }
 
   window = SDL_CreateWindowWithProperties(props);
@@ -316,7 +325,7 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
   artboardInstance->draw(renderer.get());
   renderer->restore();
 
-  // End frame (backend-specific cleanup)
+  // End frame (backend-specific cleanup and flushing)
   graphicsBackend->endFrame();
 
   return SDL_APP_CONTINUE;

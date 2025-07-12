@@ -1,0 +1,176 @@
+# FindGLAD.cmake
+# ============================================================================
+# CMake Find Module for GLAD (OpenGL Loader-Generator)
+# Following YUP module system patterns for platform-specific builds
+#
+# Usage:
+#   find_package(GLAD REQUIRED)
+#   target_link_libraries(your_target PRIVATE GLAD::GLAD)
+#
+# This module defines the following IMPORTED targets:
+#   GLAD::GLAD - GLAD library
+#
+# Variables:
+#   GLAD_FOUND          - True if GLAD is found
+#   GLAD_INCLUDE_DIRS   - Include directories for GLAD
+#   GLAD_LIBRARIES      - Libraries to link against
+#   GLAD_ROOT_DIR       - Directory containing GLAD source (can be set by user)
+# ============================================================================
+
+# Allow user to specify the GLAD directory
+if(NOT GLAD_ROOT_DIR)
+    set(_glad_search_paths
+        "${CMAKE_CURRENT_SOURCE_DIR}/third_party/glad"
+        "${CMAKE_SOURCE_DIR}/third_party/glad"
+    )
+    
+    foreach(_path ${_glad_search_paths})
+        if(EXISTS "${_path}/include/glad.h" OR EXISTS "${_path}/glad.h")
+            set(GLAD_ROOT_DIR "${_path}")
+            break()
+        endif()
+    endforeach()
+endif()
+
+# Check if we found the source
+set(_glad_header_found FALSE)
+if(GLAD_ROOT_DIR)
+    if(EXISTS "${GLAD_ROOT_DIR}/include/glad.h")
+        set(GLAD_INCLUDE_DIR "${GLAD_ROOT_DIR}/include")
+        set(_glad_header_found TRUE)
+    elseif(EXISTS "${GLAD_ROOT_DIR}/glad.h")
+        set(GLAD_INCLUDE_DIR "${GLAD_ROOT_DIR}")
+        set(_glad_header_found TRUE)
+    endif()
+endif()
+
+if(NOT _glad_header_found)
+    if(GLAD_FIND_REQUIRED)
+        message(FATAL_ERROR "Could not find GLAD source directory. Please set GLAD_ROOT_DIR to the directory containing GLAD source.")
+    else()
+        set(GLAD_FOUND FALSE)
+        return()
+    endif()
+endif()
+
+# Only create target if it doesn't already exist
+if(NOT TARGET GLAD::GLAD)
+    # Collect source files (following YUP pattern)
+    set(glad_sources "")
+    
+    # Check source directory first
+    if(EXISTS "${GLAD_ROOT_DIR}/source")
+        file(GLOB source_files "${GLAD_ROOT_DIR}/source/*.c")
+        list(APPEND glad_sources ${source_files})
+    endif()
+    
+    # Check root directory for glad.c
+    if(EXISTS "${GLAD_ROOT_DIR}/glad.c")
+        list(APPEND glad_sources "${GLAD_ROOT_DIR}/glad.c")
+    endif()
+    
+    # Filter out any test files
+    set(filtered_sources "")
+    foreach(source ${glad_sources})
+        if(NOT source MATCHES "/test/" AND NOT source MATCHES "_test\\.(c|cpp)$")
+            list(APPEND filtered_sources ${source})
+        endif()
+    endforeach()
+    
+    if(NOT filtered_sources)
+        if(GLAD_FIND_REQUIRED)
+            message(FATAL_ERROR "Could not find GLAD source files in ${GLAD_ROOT_DIR}")
+        else()
+            set(GLAD_FOUND FALSE)
+            return()
+        endif()
+    endif()
+    
+    # Create the library
+    add_library(GLAD_GLAD STATIC ${filtered_sources})
+    add_library(GLAD::GLAD ALIAS GLAD_GLAD)
+    
+    # Set include directories (following YUP searchpaths pattern)
+    target_include_directories(GLAD_GLAD PUBLIC
+        "${GLAD_INCLUDE_DIR}"
+    )
+    
+    # Platform-specific defines (following YUP rive_renderer pattern)
+    if(EMSCRIPTEN)
+        target_compile_definitions(GLAD_GLAD PUBLIC RIVE_WEBGL=1)
+    elseif(WIN32)
+        target_compile_definitions(GLAD_GLAD PUBLIC 
+            RIVE_DESKTOP_GL=1
+            NOMINMAX=1 
+            WIN32_LEAN_AND_MEAN=1
+        )
+    elseif(APPLE)
+        if(IOS)
+            target_compile_definitions(GLAD_GLAD PUBLIC RIVE_IOS=1)
+        else()
+            target_compile_definitions(GLAD_GLAD PUBLIC RIVE_DESKTOP_GL=1)
+        endif()
+    elseif(ANDROID)
+        target_compile_definitions(GLAD_GLAD PUBLIC RIVE_ANDROID=1)
+    elseif(UNIX)
+        target_compile_definitions(GLAD_GLAD PUBLIC RIVE_DESKTOP_GL=1)
+    endif()
+    
+    # Set C standard (GLAD is a C library)
+    target_compile_features(GLAD_GLAD PUBLIC c_std_99)
+    
+    # Platform-specific compiler flags (following YUP pattern)
+    if(MSVC)
+        target_compile_options(GLAD_GLAD PRIVATE /W3)
+    else()
+        target_compile_options(GLAD_GLAD PRIVATE -Wall -Wextra)
+    endif()
+    
+    # Set properties (following YUP module pattern)
+    set_target_properties(GLAD_GLAD PROPERTIES
+        C_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+        POSITION_INDEPENDENT_CODE ON
+    )
+    
+    # Platform-specific properties
+    if(APPLE)
+        set_target_properties(GLAD_GLAD PROPERTIES
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC NO
+        )
+    endif()
+endif()
+
+# Set up standard CMake variables
+set(GLAD_INCLUDE_DIRS "${GLAD_INCLUDE_DIR}")
+set(GLAD_LIBRARIES GLAD::GLAD)
+
+# Try to determine version from header
+if(EXISTS "${GLAD_INCLUDE_DIR}/glad.h")
+    file(STRINGS "${GLAD_INCLUDE_DIR}/glad.h" GLAD_VERSION_LINE
+        REGEX "OpenGL ES loader generated by glad [0-9]+\\.[0-9]+\\.[0-9]+"
+    )
+    if(GLAD_VERSION_LINE)
+        string(REGEX REPLACE ".*glad ([0-9]+\\.[0-9]+\\.[0-9]+).*" "\\1" GLAD_VERSION "${GLAD_VERSION_LINE}")
+    else()
+        set(GLAD_VERSION "unknown")
+    endif()
+else()
+    set(GLAD_VERSION "unknown")
+endif()
+
+# Use FindPackageHandleStandardArgs to set GLAD_FOUND
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(GLAD
+    REQUIRED_VARS GLAD_ROOT_DIR GLAD_INCLUDE_DIR
+    VERSION_VAR GLAD_VERSION
+)
+
+# Set variables in parent scope if found and parent scope exists
+if(GLAD_FOUND AND CMAKE_CURRENT_FUNCTION)
+    set(GLAD_INCLUDE_DIRS ${GLAD_INCLUDE_DIRS} PARENT_SCOPE)
+    set(GLAD_LIBRARIES ${GLAD_LIBRARIES} PARENT_SCOPE)
+    set(GLAD_ROOT_DIR ${GLAD_ROOT_DIR} PARENT_SCOPE)
+endif()
+
+mark_as_advanced(GLAD_ROOT_DIR GLAD_INCLUDE_DIR)
