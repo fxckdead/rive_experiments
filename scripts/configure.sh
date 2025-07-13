@@ -11,6 +11,6 @@ fi
 
 VCPKG_TOOLCHAIN="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
 
-cmake -S . -B build/$BUILD_TYPE \
+cmake -G Xcode -S . -B build/$BUILD_TYPE \
   -DCMAKE_TOOLCHAIN_FILE=$VCPKG_TOOLCHAIN \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE
