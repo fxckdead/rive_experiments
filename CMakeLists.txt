@@ -172,10 +172,10 @@ else()
             GLAD::GLAD
             harfbuzz::harfbuzz
             PNG::PNG
-            WebP::webp
             WebP::webpdemux
             WebP::libwebpmux
             WebP::webpdecoder
+            WebP::webp
             yoga::yogacore
             RIVE::rive
             RIVE::renderer

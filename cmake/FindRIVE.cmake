@@ -73,7 +73,7 @@ elseif(UNIX)
     set(RIVE_PLATFORM_NAME "linux")
 endif()
 
-# Function to collect source files (RESTORE the original filtering logic)
+# Function to collect source files
 function(_rive_collect_sources base_path output_var)
     file(GLOB_RECURSE all_sources
         "${base_path}/*.cpp"
@@ -122,6 +122,17 @@ function(_rive_collect_sources base_path output_var)
         
         # EXTEND with additional filtering for files that shouldn't be in web builds
         if(RIVE_PLATFORM_WEB AND source MATCHES "(coretext|metal|d3d)")
+            set(include_file FALSE)
+        endif()
+
+        # Filter out D3D files for Windows when using OpenGL
+        if(RIVE_PLATFORM_WINDOWS AND source MATCHES "/d3d/")
+            set(include_file FALSE)
+        endif()
+        if(RIVE_PLATFORM_WINDOWS AND source MATCHES "/d3d11/")
+            set(include_file FALSE)
+        endif()
+        if(RIVE_PLATFORM_WINDOWS AND source MATCHES "/d3d12/")
             set(include_file FALSE)
         endif()
 
@@ -241,7 +252,12 @@ if(NOT TARGET RIVE::decoders)
 
     if(WebP_FOUND)
         target_compile_definitions(RIVE_decoders PUBLIC RIVE_WEBP=1)
-        target_link_libraries(RIVE_decoders PUBLIC WebP::webp)
+        target_link_libraries(RIVE_decoders PUBLIC 
+            WebP::webpdemux
+            WebP::libwebpmux
+            WebP::webpdecoder
+            WebP::webp
+        )
     endif()
 
     # Platform-specific settings
@@ -259,7 +275,7 @@ if(NOT TARGET RIVE::renderer)
     # Rive Renderer - using YUP pattern with platform-specific files
     set(rive_renderer_dir "${RIVE_THIRDPARTY_DIR}/rive_renderer")
     
-    # Use platform-specific source files (following YUP pattern exactly)
+    # Use platform-specific source files (following YUP module pattern)
     set(rive_renderer_sources "")
     
     # Common sources (always included)
@@ -270,6 +286,8 @@ if(NOT TARGET RIVE::renderer)
         list(APPEND rive_renderer_sources "${rive_renderer_dir}/rive_renderer_emscripten.cpp")
     elseif(RIVE_PLATFORM_WINDOWS)
         list(APPEND rive_renderer_sources "${rive_renderer_dir}/rive_renderer_windows.cpp")
+        # Add missing WebGL implementation for Windows when using OpenGL
+        list(APPEND rive_renderer_sources "${rive_renderer_dir}/source/gl/pls_impl_webgl.cpp")
     elseif(RIVE_PLATFORM_APPLE)
         list(APPEND rive_renderer_sources "${rive_renderer_dir}/rive_renderer_apple.mm")
     elseif(RIVE_PLATFORM_ANDROID)
@@ -303,11 +321,11 @@ if(NOT TARGET RIVE::renderer)
     # Platform-specific defines (following YUP module pattern)
     if(RIVE_PLATFORM_WEB)
         target_compile_definitions(RIVE_renderer PUBLIC RIVE_WEBGL=1)
-    elseif(RIVE_PLATFORM_DESKTOP AND NOT RIVE_PLATFORM_APPLE)
-        # Enable OpenGL for non-Apple desktop platforms (Windows, Linux)
+    elseif(RIVE_PLATFORM_DESKTOP AND NOT RIVE_PLATFORM_APPLE)     
         target_compile_definitions(RIVE_renderer PUBLIC 
             RIVE_DESKTOP_GL=1
             YUP_RIVE_USE_OPENGL=1
+            YUP_RIVE_USE_D3D=0
         )
         
         # GLAD dependency for desktop platforms
@@ -316,11 +334,12 @@ if(NOT TARGET RIVE::renderer)
             target_link_libraries(RIVE_renderer PUBLIC GLAD::GLAD)
             message(STATUS "Using GLAD::GLAD from FindGlad.cmake")
         endif()
+    elseif(RIVE_PLATFORM_APPLE)
+        target_compile_definitions(RIVE_renderer PUBLIC YUP_RIVE_USE_METAL=1)
     endif()
 
     # Platform-specific frameworks and libraries (following YUP pattern)
     if(RIVE_PLATFORM_APPLE)
-        target_compile_definitions(RIVE_renderer PUBLIC YUP_RIVE_USE_METAL=1)
         target_link_libraries(RIVE_renderer PUBLIC
             "-framework Metal"
             "-framework QuartzCore"
@@ -332,8 +351,9 @@ if(NOT TARGET RIVE::renderer)
         target_compile_definitions(RIVE_renderer PUBLIC RIVE_ANDROID=1)
         target_link_libraries(RIVE_renderer PUBLIC EGL GLESv3)
     elseif(RIVE_PLATFORM_WINDOWS)
-        target_compile_definitions(RIVE_renderer PUBLIC YUP_RIVE_USE_D3D=1)
-        target_link_libraries(RIVE_renderer PUBLIC d3d11 d3dcompiler dxgi)
+        # Remove D3D for now and use OpenGL
+        # target_compile_definitions(RIVE_renderer PUBLIC YUP_RIVE_USE_D3D=1)
+        # target_link_libraries(RIVE_renderer PUBLIC d3d11 d3dcompiler dxgi)
     endif()
 
     # Link dependencies
